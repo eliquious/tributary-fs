@@ -1,10 +1,11 @@
-from tributary.streams import StreamProducer
+from tributary.streams import StreamProducer, StreamElement
 from tributary.core import Message
 from tributary.utilities import validateType
 
 import os, glob, re
 
-__all__ = ['FileStream', 'RecursiveFileStream', 'GlobFileStream', 'DelimFileStream']
+__all__ = ['FileStream', 'RecursiveFileStream', 'GlobFileStream', 'DelimFileStream', 'DestinationFileStream']
+
 
 class FileStream(StreamProducer):
     """FileStream is a base class for all data sources which come from files."""
@@ -12,6 +13,7 @@ class FileStream(StreamProducer):
         super(FileStream, self).__init__(name)
         self.name = name
         self.filename = filename
+
 
 class RecursiveFileStream(FileStream):
     """Recursively fetches a list of files from a directory."""
@@ -25,6 +27,7 @@ class RecursiveFileStream(FileStream):
 
     def process(self, msg):
         os.path.walk(self.filename, self._add_file, 0)
+
 
 class GlobFileStream(FileStream):
     """GlobStream fetches all files matching the glob string"""
@@ -161,3 +164,14 @@ class DelimFileStream(FileStream):
                     self.emitBatch('data', results)
 
 
+class DestinationFileStream(StreamElement):
+    """DestinationFileStream writes messages into a file"""
+    def __init__(self, name, filename):
+        super(DestinationFileStream, self).__init__(name)
+        self.filename = filename
+
+    def preProcess(self, msg=None):
+        self.fh = open(self.filename, 'w')
+
+    def postProcess(self, msg=None):
+        self.fh.close()
